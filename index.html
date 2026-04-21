@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agente LinkedIn Técnico</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --border: #1e1e2e;
+    --accent1: #00ff87;
+    --accent2: #ff6b35;
+    --accent3: #7c5cfc;
+    --text: #e8e8f0;
+    --muted: #5a5a72;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,135,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,135,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    border-left: 3px solid var(--accent1);
+    padding-left: 20px;
+    margin-bottom: 40px;
+  }
+
+  .tag {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--accent1);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    line-height: 1.05;
+    color: #fff;
+  }
+
+  h1 span { color: var(--accent1); }
+
+  .subtitle {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .form-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent3);
+    padding: 28px;
+    margin-bottom: 16px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  @media (max-width: 540px) { .form-grid { grid-template-columns: 1fr; } }
+
+  .form-row { margin-bottom: 14px; }
+  .form-row:last-child { margin-bottom: 0; }
+
+  .form-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 7px;
+  }
+
+  .form-select, .form-textarea {
+    width: 100%;
+    background: #0a0a0f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    border-radius: 0;
+  }
+
+  .form-select:focus, .form-textarea:focus { border-color: var(--accent3); }
+  .form-select option { background: #111118; }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 110px;
+    line-height: 1.7;
+  }
+
+  .char-count {
+    font-size: 9px;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 5px;
+  }
+
+  .btn-generate {
+    width: 100%;
+    padding: 15px;
+    background: var(--accent1);
+    color: #0a0a0f;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    margin-top: 20px;
+  }
+
+  .btn-generate:hover:not(:disabled) { opacity: 0.85; }
+  .btn-generate:active:not(:disabled) { transform: scale(0.99); }
+  .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status-bar {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--accent1);
+    padding: 12px 0;
+    text-align: center;
+    min-height: 36px;
+  }
+
+  .error-msg {
+    background: rgba(255,107,53,0.08);
+    border: 1px solid var(--accent2);
+    border-left: 3px solid var(--accent2);
+    padding: 12px 16px;
+    font-size: 11px;
+    color: var(--accent2);
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  .error-msg.visible { display: block; }
+
+  .results { display: none; }
+  .results.visible { display: block; }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .post-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .post-card:hover { border-color: var(--accent1); }
+
+  .post-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+
+  .post-variant {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--accent1);
+    text-transform: uppercase;
+    flex: 1;
+  }
+
+  .btn-copy {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-copy:hover, .btn-copy.copied { border-color: var(--accent1); color: var(--accent1); }
+
+  .post-body {
+    padding: 18px;
+    font-size: 12px;
+    line-height: 1.9;
+    color: #c0c0d4;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .post-footer {
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 1px;
+  }
+
+  .pulse-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent1);
+    margin-right: 8px;
+    animation: pulse 2s infinite;
+    vertical-align: middle;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <span class="tag">⟶ agente linkedin · nicho técnico</span>
+    <h1>Gera posts que<br><span>convertem autoridade</span></h1>
+    <p class="subtitle">Dados técnicos → conteúdo de impacto para engenheiros e gestores industriais</p>
+  </header>
+
+  <div class="form-block">
+    <div class="form-grid">
+      <div>
+        <label class="form-label">Área técnica</label>
+        <select class="form-select" id="area">
+          <option value="manutenção industrial">Manutenção Industrial</option>
+          <option value="gestão de ativos e OEE">Gestão de Ativos / OEE</option>
+          <option value="automação e indústria 4.0">Automação / Indústria 4.0</option>
+          <option value="engenharia de processo">Engenharia de Processo</option>
+          <option value="qualidade e inspeção">Qualidade / Inspeção</option>
+          <option value="CMMS e gestão de OS">CMMS / Gestão de OS</option>
+          <option value="segurança industrial">Segurança Industrial</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Formato preferido</label>
+        <select class="form-select" id="formato">
+          <option value="insight de dado + aprendizado">Dado + Aprendizado</option>
+          <option value="erro cometido + lição aprendida">Erro + Lição</option>
+          <option value="dica técnica prática">Dica Técnica</option>
+          <option value="case de resultado real">Case de Resultado</option>
+          <option value="provocação / pergunta para debate">Provocação / Debate</option>
+          <option value="mito vs realidade do setor">Mito vs Realidade</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">Contexto / Dado / Situação</label>
+      <textarea class="form-textarea" id="contexto" placeholder="Ex: nossa planta reduziu paradas não planejadas em 34% após implementar preventiva baseada em vibração nas bombas centrífugas..."></textarea>
+      <div class="char-count" id="charCount">0 / 500 chars recomendados</div>
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">Tom de voz</label>
+      <select class="form-select" id="tom">
+        <option value="técnico e direto, sem enrolação">Técnico e direto</option>
+        <option value="autoridade experiente, que já errou e aprendeu">Autoridade experiente</option>
+        <option value="provocador, vai contra o senso comum do setor">Provocador</option>
+        <option value="didático, explica para quem está começando">Didático</option>
+      </select>
+    </div>
+
+    <button class="btn-generate" id="btnGenerate" onclick="gerarPosts()">
+      ⟶ Gerar 3 variações de post
+    </button>
+  </div>
+
+  <div class="status-bar" id="statusBar"></div>
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="results" id="results">
+    <p class="section-title">3 variações geradas</p>
+    <div id="postsContainer"></div>
+  </div>
+
+  <footer>
+    <span class="pulse-dot"></span>
+    agente linkedin técnico · powered by claude · mantto
+  </footer>
+
+</div>
+
+<script>
+  document.getElementById('contexto').addEventListener('input', function() {
+    const n = this.value.length;
+    const el = document.getElementById('charCount');
+    el.textContent = n + ' / 500 chars recomendados';
+    el.style.color = n > 500 ? '#ff6b35' : '#5a5a72';
+  });
+
+  async function gerarPosts() {
+    const area = document.getElementById('area').value;
+    const formato = document.getElementById('formato').value;
+    const contexto = document.getElementById('contexto').value.trim();
+    const tom = document.getElementById('tom').value;
+
+    if (!contexto || contexto.length < 20) {
+      mostrarErro('Adicione mais contexto — pelo menos descreva a situação técnica (20+ caracteres).');
+      return;
+    }
+
+    const btn = document.getElementById('btnGenerate');
+    const statusBar = document.getElementById('statusBar');
+    const results = document.getElementById('results');
+    const postsContainer = document.getElementById('postsContainer');
+    const errorMsg = document.getElementById('errorMsg');
+
+    btn.disabled = true;
+    errorMsg.classList.remove('visible');
+    results.classList.remove('visible');
+    statusBar.textContent = '⟳ gerando variações com Claude...';
+
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ area, formato, contexto, tom })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro na geração. Tente novamente.');
+      }
+
+      const posts = data.posts || [];
+      if (!posts.length) throw new Error('Nenhum post retornado. Tente novamente.');
+
+      postsContainer.innerHTML = '';
+
+      posts.forEach((post, i) => {
+        const chars = (post.texto || '').length;
+        const card = document.createElement('div');
+        card.className = 'post-card';
+        card.innerHTML = `
+          <div class="post-card-header">
+            <span class="post-variant">${escHtml(post.variacao || 'Variação ' + (i+1))} · ${escHtml(post.titulo || '')}</span>
+            <button class="btn-copy" onclick="copiarPost(this, ${i})">copiar</button>
+          </div>
+          <div class="post-body" id="post-text-${i}">${escHtml(post.texto || '')}</div>
+          <div class="post-footer">${chars} caracteres</div>
+        `;
+        postsContainer.appendChild(card);
+      });
+
+      results.classList.add('visible');
+      statusBar.textContent = '✓ 3 posts gerados com sucesso';
+
+    } catch (err) {
+      mostrarErro(err.message || 'Erro desconhecido. Verifique a conexão.');
+      statusBar.textContent = '';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function copiarPost(btn, i) {
+    const el = document.getElementById('post-text-' + i);
+    if (!el) return;
+    navigator.clipboard.writeText(el.textContent).then(() => {
+      btn.textContent = 'copiado!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'copiar'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  function mostrarErro(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.classList.add('visible');
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
